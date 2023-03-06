@@ -15,6 +15,18 @@ pub fn build_ui() -> impl Widget<ClientData> {
             ClientData::mqtt_port
         ));
     
+    let mqtt_user_pwd = Flex::row()
+        .with_child(Label::new("MQTT Username: "))
+        .with_child(LensWrap::new(
+            TextBox::new(),
+            ClientData::mqtt_user
+        ))
+        .with_child(Label::new("Password: "))
+        .with_child(LensWrap::new(
+            TextBox::new(),
+            ClientData::mqtt_pwd
+        ));
+    
     let udp_data_input_row = Flex::row()
         .with_child(Label::new("UDP Port: "))
         .with_child(LensWrap::new(
@@ -31,6 +43,7 @@ pub fn build_ui() -> impl Widget<ClientData> {
     Container::new(
         Flex::column()
             .with_child(mqtt_data_input_row)
+            .with_child(mqtt_user_pwd)
             .with_child(udp_data_input_row)
             .center()
     )
