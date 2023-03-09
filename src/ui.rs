@@ -1,3 +1,5 @@
+use std::{thread, str, net::UdpSocket};
+
 use crate::common::ClientData;
 use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
 
@@ -50,5 +52,24 @@ pub fn build_ui() -> impl Widget<ClientData> {
 }
 
 fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
-    println!("Hello, World!");
+    let cloned_data = data.clone();
+    
+    thread::spawn(move || {
+        let socket = UdpSocket::bind(format!("0.0.0.0:{}", cloned_data.udp_port))
+            .expect("Failed to bind UDP Port");
+        println!("Bound to UDP Port: {}", cloned_data.udp_port);
+        
+        loop {
+            let mut buf = [0; 512];
+            match socket.recv(&mut buf) {
+                Ok(_) => {
+                    match str::from_utf8(&buf) {
+                        Ok(res) => println!("Received: {}", res),
+                        Err(e) => println!("{}", e.to_string()),
+                    };
+                },
+                Err(e) => println!("{}", e.to_string())
+            };
+        }
+    });
 }

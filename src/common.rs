@@ -2,11 +2,11 @@ use druid::{Data, Lens};
 
 #[derive(Clone, Data, Lens)]
 pub struct ClientData {
-    mqtt_hostname: String,
-    mqtt_port: i32,
-    mqtt_user: String,
-    mqtt_pwd: String,
-    udp_port: i32,
+    pub mqtt_hostname: String,
+    pub mqtt_port: i32,
+    pub mqtt_user: String,
+    pub mqtt_pwd: String,
+    pub udp_port: i32,
 }
 
 impl ClientData {
@@ -16,7 +16,7 @@ impl ClientData {
             mqtt_port,
             mqtt_user: String::new(),
             mqtt_pwd: String::new(),
-            udp_port
+            udp_port,
         }
     }
 }
