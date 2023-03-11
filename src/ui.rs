@@ -96,34 +96,17 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
                 },
             };
             
-            let json_obj: Option<JsonData> = match serde_json::from_str(json_str) {
-                Ok(obj) => Some(obj),
-                Err(e) => {
-                    warn!("Failed to parse String into JsonData: {}", e);
-                    None
-                },
-            };
-            
-            match json_obj {
-                Some(j) => {
-                    
-                    let j_str = match serde_json::to_string(&j) {
-                        Ok(val) => val,
-                        Err(e) => {
-                            warn!("Failed to parse JSON struct into String: {}", e.to_string());
-                            continue;
-                        }
-                    };
-                    
-                    if let Err(err) = tx.send(j_str) {
+            match serde_json::from_str::<JsonData>(json_str) {
+                Ok(_obj) => {                    
+                    if let Err(err) = tx.send(String::from(json_str)) {
                         warn!("Failed to pass message: {}", err.to_string());
                     }
                 },
-                None => {
-                    warn!("INVALID JSON STRING FORMAT");
+                Err(e) => {
+                    warn!("Failed to parse String into JsonData: {}", e);
                     continue;
-                }
-            }
+                },
+            };
         }
     });
     
