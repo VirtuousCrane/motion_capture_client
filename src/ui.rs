@@ -1,4 +1,4 @@
-use std::{thread, str, net::UdpSocket};
+use std::{thread, str, net::UdpSocket, sync::mpsc};
 
 use crate::common::ClientData;
 use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
@@ -68,6 +68,52 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
     info!("Bound to UDP Port: {}", data.udp_port);
     
     // Initialize MQTT Connection
+    let mqtt_client = match init_mqtt_client(&data) {
+        Some(client) => client,
+        None => return,
+    };
+    info!("Initialized MQTT Client");
+    
+    // Initialize Message Passing Channel
+    let (tx, rx) = mpsc::channel();
+    
+    let _udp_thread_handle = thread::spawn(move || {
+        loop {
+            let mut buf = [0; 512];
+            match socket.recv(&mut buf) {
+                Ok(_) => {
+                    match str::from_utf8(&buf) {
+                        Ok(res) => {
+                            println!("Received: {}", res);
+                            if let Err(err) = tx.send(String::from(res)) {
+                                warn!("Failed to pass message: {}", err.to_string());
+                            }
+                        },
+                        Err(e) => println!("{}", e.to_string()),
+                    };
+                },
+                Err(e) => println!("{}", e.to_string())
+            };
+        }
+    });
+    
+    let _mqtt_thread_handle = thread::spawn(move || {
+        loop {
+            let payload = match rx.recv() {
+                Ok(msg) => msg,
+                Err(_) => break,
+            };
+            
+            let message = Message::new("RUST/TEST", payload, 0);
+            if let Err(err) = mqtt_client.publish(message) {
+                warn!("Failed to publish message: {}", err.to_string());
+            }
+        }
+    });
+}
+
+fn init_mqtt_client(data: &ClientData) -> Option<Client> {
+    // Initializing the Connection Arguments
     let host_uri = format!("tcp://{}:{}", &data.mqtt_hostname, &data.mqtt_port);
     let mqtt_client_args = CreateOptionsBuilder::new()
         .server_uri(&host_uri)
@@ -77,37 +123,27 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
         .user_name(&data.mqtt_user)
         .password(&data.mqtt_pwd)
         .finalize();
+    
+    // Initializes the MQTT Client
     let mqtt_client = match Client::new(mqtt_client_args) {
         Ok(client) => client,
         Err(err) => {
-            warn!("{}", err.to_string());
-            return;
+            warn!("Failed to create MQTT client: {}", err.to_string());
+            return None;
         }
     };
     
+    // Tries to Establish Connection to the MQTT Server
     if let Err(err) = mqtt_client.connect(mqtt_connect_args) {
         warn!("Failed to connect to MQTT server: {}", err.to_string());
-        return;
+        return None;
     }
     
-    let test_msg = Message::new("RUST/TEST", "Yolo lmao", 0);
-    match mqtt_client.publish(test_msg) {
-        Ok(_) => info!("Published Test Message"),
-        Err(e) => warn!("Failed to publish test message: {}", e.to_string()),
-    };
-    
-    let _udp_thread_handle = thread::spawn(move || {
-        loop {
-            let mut buf = [0; 512];
-            match socket.recv(&mut buf) {
-                Ok(_) => {
-                    match str::from_utf8(&buf) {
-                        Ok(res) => println!("Received: {}", res),
-                        Err(e) => println!("{}", e.to_string()),
-                    };
-                },
-                Err(e) => println!("{}", e.to_string())
-            };
-        }
-    });
+    // let test_msg = Message::new("MOTIONCAPTURE/TEST", format!("CONNECTION ESTABLISHED"), 0);
+    // match mqtt_client.publish(test_msg) {
+    //     Ok(_) => info!("Published Test Message"),
+    //     Err(e) => warn!("Failed to publish test message: {}", e.to_string()),
+    // };
+ 
+    Some(mqtt_client)
 }
