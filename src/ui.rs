@@ -97,8 +97,8 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
             };
             
             match serde_json::from_str::<JsonData>(json_str) {
-                Ok(_obj) => {                    
-                    if let Err(err) = tx.send(String::from(json_str)) {
+                Ok(obj) => {                    
+                    if let Err(err) = tx.send(obj) {
                         warn!("Failed to pass message: {}", err.to_string());
                     }
                 },
@@ -114,10 +114,27 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
         loop {
             let payload = match rx.recv() {
                 Ok(msg) => msg,
-                Err(_) => break,
+                Err(_) => continue,
             };
             
-            let message = Message::new("RUST/TEST", payload, 0);
+            let topic = match payload {
+                JsonData::MPU6050Data { .. } => {
+                    "MOTIONCAPTURE/MPU6050"
+                },
+                JsonData::UWBData { .. } => {
+                    "MOTIONCAPTURE/UWB"
+                }
+            };
+            
+            let payload_str = match serde_json::to_string(&payload) {
+                Ok(s) => s,
+                Err(_) => {
+                    warn!("Failed to parse Payload into String");
+                    return;
+                },
+            };
+            
+            let message = Message::new(topic, payload_str, 0);
             if let Err(err) = mqtt_client.publish(message) {
                 warn!("Failed to publish message: {}", err.to_string());
             }
