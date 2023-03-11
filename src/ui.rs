@@ -4,6 +4,7 @@ use crate::common::ClientData;
 use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
 use log::{info, warn};
 
+/// Creates the ui of the program
 pub fn build_ui() -> impl Widget<ClientData> {
     let mqtt_data_input_row = Flex::row()
         .with_child(Label::new("MQTT Hostname: "))
@@ -52,6 +53,7 @@ pub fn build_ui() -> impl Widget<ClientData> {
     )
 }
 
+/// Callback for the connect button. Creates a new thread to listen to UDP messages
 fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
     let cloned_data = data.clone();
     let socket = match UdpSocket::bind(format!("0.0.0.0:{}", cloned_data.udp_port)) {

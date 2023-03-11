@@ -7,10 +7,7 @@ mod ui;
 mod common;
 
 fn main() {
-    // Logs to stderr
-    // env_logger::init();
-    
-    // Logs to stdout
+    // Initialize Logger
     Builder::from_env(Env::default().default_filter_or("motion_capture_client=trace"))
         .init();
     info!("Initialized Logger");
