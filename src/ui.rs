@@ -1,6 +1,6 @@
 use std::{thread, str, net::UdpSocket, sync::mpsc};
 
-use crate::common::ClientData;
+use crate::common::{ClientData, JsonData};
 use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
 use log::{info, warn};
 use paho_mqtt::{CreateOptionsBuilder, Client, ConnectOptionsBuilder, Message};
@@ -84,15 +84,46 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
                 warn!("Failed to receive UDP message: {}", err.to_string());
             }
             
-            match str::from_utf8(&buf) {
+            let json_str = match str::from_utf8(&buf) {
                 Ok(res) => {
-                    println!("Received: {}", res);
-                    if let Err(err) = tx.send(String::from(res)) {
+                    info!("Received: {}", res.trim());
+                    let result = res.trim_matches(char::from(0));
+                    result.trim()
+                },
+                Err(e) => {
+                    warn!("{}", e.to_string());
+                    continue;
+                },
+            };
+            
+            let json_obj: Option<JsonData> = match serde_json::from_str(json_str) {
+                Ok(obj) => Some(obj),
+                Err(e) => {
+                    warn!("Failed to parse String into JsonData: {}", e);
+                    None
+                },
+            };
+            
+            match json_obj {
+                Some(j) => {
+                    
+                    let j_str = match serde_json::to_string(&j) {
+                        Ok(val) => val,
+                        Err(e) => {
+                            warn!("Failed to parse JSON struct into String: {}", e.to_string());
+                            continue;
+                        }
+                    };
+                    
+                    if let Err(err) = tx.send(j_str) {
                         warn!("Failed to pass message: {}", err.to_string());
                     }
                 },
-                Err(e) => println!("{}", e.to_string()),
-            };            
+                None => {
+                    warn!("INVALID JSON STRING FORMAT");
+                    continue;
+                }
+            }
         }
     });
     

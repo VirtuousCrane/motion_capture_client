@@ -27,15 +27,15 @@ impl ClientData {
 pub enum JsonData {
     MPU6050Data {
         source: String,
-        acc_x: i64,
-        acc_y: i64,
-        acc_z: i64,
-        rot_x: i64,
-        rot_y: i64,
-        rot_z: i64,
+        acc_x: f64,
+        acc_y: f64,
+        acc_z: f64,
+        rot_x: f64,
+        rot_y: f64,
+        rot_z: f64,
     },
     UWBData {
         source: String,
-        range: i64,
+        range: f64,
     }
 }
