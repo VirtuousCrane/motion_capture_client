@@ -80,20 +80,19 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
     let _udp_thread_handle = thread::spawn(move || {
         loop {
             let mut buf = [0; 512];
-            match socket.recv(&mut buf) {
-                Ok(_) => {
-                    match str::from_utf8(&buf) {
-                        Ok(res) => {
-                            println!("Received: {}", res);
-                            if let Err(err) = tx.send(String::from(res)) {
-                                warn!("Failed to pass message: {}", err.to_string());
-                            }
-                        },
-                        Err(e) => println!("{}", e.to_string()),
-                    };
+            if let Err(err) = socket.recv(&mut buf) {
+                warn!("Failed to receive UDP message: {}", err.to_string());
+            }
+            
+            match str::from_utf8(&buf) {
+                Ok(res) => {
+                    println!("Received: {}", res);
+                    if let Err(err) = tx.send(String::from(res)) {
+                        warn!("Failed to pass message: {}", err.to_string());
+                    }
                 },
-                Err(e) => println!("{}", e.to_string())
-            };
+                Err(e) => println!("{}", e.to_string()),
+            };            
         }
     });
     
