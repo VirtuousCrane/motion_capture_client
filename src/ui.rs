@@ -139,11 +139,5 @@ fn init_mqtt_client(data: &ClientData) -> Option<Client> {
         return None;
     }
     
-    // let test_msg = Message::new("MOTIONCAPTURE/TEST", format!("CONNECTION ESTABLISHED"), 0);
-    // match mqtt_client.publish(test_msg) {
-    //     Ok(_) => info!("Published Test Message"),
-    //     Err(e) => warn!("Failed to publish test message: {}", e.to_string()),
-    // };
- 
     Some(mqtt_client)
 }
