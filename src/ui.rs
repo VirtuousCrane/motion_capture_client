@@ -2,6 +2,7 @@ use std::{thread, str, net::UdpSocket};
 
 use crate::common::ClientData;
 use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
+use log::{info, warn};
 
 pub fn build_ui() -> impl Widget<ClientData> {
     let mqtt_data_input_row = Flex::row()
@@ -53,12 +54,16 @@ pub fn build_ui() -> impl Widget<ClientData> {
 
 fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
     let cloned_data = data.clone();
+    let socket = match UdpSocket::bind(format!("0.0.0.0:{}", cloned_data.udp_port)) {
+        Ok(s) => s,
+        Err(err) => {
+            warn!("Failed to bind UDP Port: {}", err.to_string());
+            return;
+        }
+    };
     
-    thread::spawn(move || {
-        let socket = UdpSocket::bind(format!("0.0.0.0:{}", cloned_data.udp_port))
-            .expect("Failed to bind UDP Port");
-        println!("Bound to UDP Port: {}", cloned_data.udp_port);
-        
+    info!("Bound to UDP Port: {}", cloned_data.udp_port);
+    let _udp_thread_handle = thread::spawn(move || {
         loop {
             let mut buf = [0; 512];
             match socket.recv(&mut buf) {
