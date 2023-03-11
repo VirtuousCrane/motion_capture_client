@@ -1,4 +1,5 @@
 use druid::{Data, Lens};
+use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Data, Lens)]
 pub struct ClientData {
@@ -18,5 +19,23 @@ impl ClientData {
             mqtt_pwd: String::new(),
             udp_port,
         }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum JsonData {
+    MPU6050Data {
+        source: String,
+        acc_x: i64,
+        acc_y: i64,
+        acc_z: i64,
+        rot_x: i64,
+        rot_y: i64,
+        rot_z: i64,
+    },
+    UWBData {
+        source: String,
+        range: i64,
     }
 }
