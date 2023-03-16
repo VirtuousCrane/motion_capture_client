@@ -27,6 +27,7 @@ impl ClientData {
 pub enum JsonData {
     MPU6050Data {
         source: String,
+        frequency: i32,
         acc_x: f64,
         acc_y: f64,
         acc_z: f64,
