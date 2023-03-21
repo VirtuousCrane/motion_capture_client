@@ -1,7 +1,7 @@
 use std::{thread, str, net::UdpSocket, sync::mpsc};
 
-use crate::common::{ClientData, JsonData};
-use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Align, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
+use crate::common::{ClientData, JsonData, Timestamp};
+use druid::{Widget, widget::{Container, Label, Flex, LensWrap, TextBox, Button}, text::format::ParseFormatter, WidgetExt, EventCtx, Env};
 use log::{info, warn};
 use paho_mqtt::{CreateOptionsBuilder, Client, ConnectOptionsBuilder, Message};
 use uuid::Uuid;
@@ -97,7 +97,12 @@ fn button_callback(_ctx: &mut EventCtx, data: &mut ClientData, _env: &Env) {
             };
             
             match serde_json::from_str::<JsonData>(json_str) {
-                Ok(obj) => {                    
+                Ok(mut obj) => {
+                    match &mut obj {
+                        JsonData::UWBData(u) => u.set_timestamp_default(),
+                        JsonData::MPU6050Data(m) => m.set_timestamp_default(),
+                    };
+                    
                     if let Err(err) = tx.send(obj) {
                         warn!("Failed to pass message: {}", err.to_string());
                     }
